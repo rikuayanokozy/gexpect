@@ -377,7 +377,7 @@ func (expect *ExpectSubprocess) Interact() {
 	go io.Copy(expect.buf.f, os.Stdin)
 }
 
-func (expect *ExpectSubprocess) ReadUntil(delim byte) ([]byte, error) {
+func (expect *ExpectSubprocess) ReadUntil(chars ...byte) ([]byte, error) {
 	join := make([]byte, 0, 512)
 	chunk := make([]byte, 255)
 
@@ -385,14 +385,15 @@ func (expect *ExpectSubprocess) ReadUntil(delim byte) ([]byte, error) {
 		n, err := expect.buf.Read(chunk)
 
 		for i := 0; i < n; i++ {
-			if chunk[i] == delim {
-				if len(chunk) > i+1 {
-					expect.buf.PutBack(chunk[i+1:n])
+			for _, char := range chars {
+				if chunk[i] == char {
+					if len(chunk) > i+1 {
+						expect.buf.PutBack(chunk[i+1 : n])
+					}
+					return join, nil
 				}
-				return join, nil
-			} else {
-				join = append(join, chunk[i])
 			}
+			join = append(join, chunk[i])
 		}
 
 		if err != nil {
